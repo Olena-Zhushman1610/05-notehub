@@ -51,10 +51,21 @@ export interface UpdateNoteDto {
 
 // функції
 // 1) Отримання нотаток
-export async function fetchNotes(params: FetchNotesParams) {
+export async function fetchNotes({
+  page,
+  perPage,
+  search,
+  tag,
+  sortBy,
+}: FetchNotesParams) {
   try {
-    const response = await api.get<NotesResponse>("", { params });
-
+    const response = await axios.get<NotesResponse>(BASE_URL, {
+      params: { page, perPage, search, tag, sortBy },
+      headers: {
+        accept: "application/json",
+        Authorization: `Bearer ${API_TOKEN}`,
+      },
+    });
     return response.data;
   } catch (error) {
     console.error("❌ Помилка запиту:", error);
