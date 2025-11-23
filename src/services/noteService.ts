@@ -57,7 +57,7 @@ export async function fetchNotes({
   search,
   tag,
   sortBy,
-}: FetchNotesParams) {
+}: FetchNotesParams): Promise<NotesResponse> {
   try {
     const response = await axios.get<NotesResponse>(BASE_URL, {
       params: { page, perPage, search, tag, sortBy },
