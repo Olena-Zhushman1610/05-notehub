@@ -64,6 +64,7 @@ export async function fetchNotes({
       headers: {
         accept: "application/json",
         Authorization: `Bearer ${API_TOKEN}`,
+        "Cache-Control": "no-cache",
       },
     });
     return response.data;

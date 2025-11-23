@@ -22,7 +22,13 @@ import type { UpdateNoteDto } from "../../services/noteService";
 
 function App() {
   const [search, setSearch] = useState<string>(""); // поточний пошуковий запит
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState(() => {
+    const saved = localStorage.getItem("notesPage");
+    return saved ? Number(saved) : 1;
+  });
+  useEffect(() => {
+    localStorage.setItem("notesPage", page.toString());
+  }, [page]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const queryClient = useQueryClient();
 
@@ -66,7 +72,7 @@ function App() {
   // Обробка нового пошукового запиту
   const handleSearch = (newSearch: string) => {
     setSearch(newSearch);
-    setPage(1); // скидаємо на першу сторінку при новому запиті
+    // скидаємо на першу сторінку при новому запиті
   };
 
   const openModal = () => setIsModalOpen(true);

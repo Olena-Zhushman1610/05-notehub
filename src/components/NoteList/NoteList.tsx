@@ -32,10 +32,7 @@ export default function NoteList({
           <p className={css.content}>{note.content}</p>
           <div className={css.footer}>
             <span className={css.tag}>{note.tag ?? "General"}</span>
-            <button className={css.button} onClick={() => onDelete(note.id)}>
-              Delete
-            </button>
-            {/* UPDATE — простий приклад */}
+            {/* UPDATE — приклад */}
             <button
               className={css.button}
               onClick={() =>
@@ -51,6 +48,10 @@ export default function NoteList({
             >
               Update
             </button>
+            <button className={css.button} onClick={() => onDelete(note.id)}>
+              Delete
+            </button>
+            {/* UPDATE — простий приклад */}
           </div>
         </li>
       ))}
