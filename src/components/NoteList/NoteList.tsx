@@ -1,23 +1,35 @@
-//import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 //import { fetchNotes } from "../../services/noteService";
 import css from "./NoteList.module.css";
 import type { NotesResponse, UpdateNoteDto } from "../../services/noteService";
+import { deleteNote, updateNote } from "../../services/noteService";
 
 interface NoteListProps {
   data: NotesResponse | undefined;
   isLoading: boolean;
   isError: boolean;
-  onDelete: (id: string) => void;
-  onUpdate: (params: { id: string; dto: UpdateNoteDto }) => void;
 }
 
-export default function NoteList({
-  data,
-  isLoading,
-  onDelete,
-  onUpdate,
-  isError,
-}: NoteListProps) {
+export default function NoteList({ data, isLoading, isError }: NoteListProps) {
+  const queryClient = useQueryClient();
+
+  //  Мутація для видалення
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => deleteNote(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notes"] });
+    },
+  });
+
+  //  Мутація для оновлення
+  const updateMutation = useMutation({
+    mutationFn: (params: { id: string; dto: UpdateNoteDto }) =>
+      updateNote(params.id, params.dto),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notes"] });
+    },
+  });
+
   if (isLoading) return <p>Loading...</p>;
   if (isError) return <p>Помилка завантаження нотаток</p>;
 
@@ -36,7 +48,7 @@ export default function NoteList({
             <button
               className={css.button}
               onClick={() =>
-                onUpdate({
+                updateMutation.mutate({
                   id: note.id,
                   dto: {
                     title: note.title,
@@ -48,10 +60,12 @@ export default function NoteList({
             >
               Update
             </button>
-            <button className={css.button} onClick={() => onDelete(note.id)}>
+            <button
+              className={css.button}
+              onClick={() => deleteMutation.mutate(note.id)}
+            >
               Delete
             </button>
-            {/* UPDATE — простий приклад */}
           </div>
         </li>
       ))}

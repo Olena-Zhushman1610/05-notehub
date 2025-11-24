@@ -1,24 +1,13 @@
 import css from "./App.module.css";
 import NoteList from "../NoteList/NoteList";
 import { useState, useEffect, useCallback } from "react";
-import {
-  keepPreviousData,
-  useQuery,
-  useMutation,
-  useQueryClient,
-} from "@tanstack/react-query";
-import {
-  fetchNotes,
-  createNote,
-  deleteNote,
-  updateNote,
-} from "../../services/noteService";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { fetchNotes } from "../../services/noteService";
 import Pagination from "../Pagination/Pagination";
 import SearchBox from "../SearchBox/SearchBox";
 import { useDebounce } from "use-debounce";
 import Modal from "../Modal/Modal";
 import NoteForm from "../NoteForm/NoteForm";
-import type { UpdateNoteDto } from "../../services/noteService";
 
 function App() {
   const [search, setSearch] = useState<string>(""); // поточний пошуковий запит
@@ -30,7 +19,6 @@ function App() {
     localStorage.setItem("notesPage", page.toString());
   }, [page]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const queryClient = useQueryClient();
 
   //  відкладене значення пошуку
   const [debouncedSearch] = useDebounce(search, 500);
@@ -45,50 +33,15 @@ function App() {
       }),
     placeholderData: keepPreviousData, // передаємо у бекенд
   });
-  // CREATE
-  const createMutation = useMutation({
-    mutationFn: createNote,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notes"] });
-    },
-  });
 
-  // DELETE
-  const deleteMutation = useMutation({
-    mutationFn: deleteNote,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notes"] });
-    },
-  });
-
-  // UPDATE
-  const updateMutation = useMutation({
-    mutationFn: ({ id, dto }: { id: string; dto: UpdateNoteDto }) =>
-      updateNote(id, dto),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notes"] });
-    },
-  });
   // Обробка нового пошукового запиту
   const handleSearch = (newSearch: string) => {
     setSearch(newSearch);
-    // скидаємо на першу сторінку при новому запиті
   };
 
   const openModal = () => setIsModalOpen(true);
   const closeModal = useCallback(() => setIsModalOpen(false), []);
 
-  // Закриття по Escape
-  useEffect(() => {
-    if (!isModalOpen) return;
-
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") closeModal();
-    };
-
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [isModalOpen, closeModal]);
   const pageCount = data?.totalPages ?? 1;
   return (
     <div className={css.app}>
@@ -105,16 +58,10 @@ function App() {
         }
       </header>
       {/* Рендеримо лише якщо є нотатки — це всередині самого NoteList */}
-      <NoteList
-        data={data}
-        isLoading={isLoading}
-        isError={isError}
-        onDelete={deleteMutation.mutate}
-        onUpdate={updateMutation.mutate}
-      />
+      <NoteList data={data} isLoading={isLoading} isError={isError} />
       {isModalOpen && (
         <Modal onClose={closeModal}>
-          <NoteForm onSuccess={closeModal} onCreate={createMutation.mutate} />
+          <NoteForm onSuccess={closeModal} />
         </Modal>
       )}
     </div>
