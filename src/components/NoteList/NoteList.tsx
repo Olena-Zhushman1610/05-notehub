@@ -1,9 +1,10 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-//import { fetchNotes } from "../../services/noteService";
+import { useState } from "react";
 import css from "./NoteList.module.css";
 import type { NotesResponse, UpdateNoteDto } from "../../services/noteService";
 import { deleteNote, updateNote } from "../../services/noteService";
-
+import type { Note } from "../../types/note";
+import EditNoteModal from "../EditNoteModal/EditNoteModal";
 interface NoteListProps {
   data: NotesResponse | undefined;
   isLoading: boolean;
@@ -12,6 +13,7 @@ interface NoteListProps {
 
 export default function NoteList({ data, isLoading, isError }: NoteListProps) {
   const queryClient = useQueryClient();
+  const [editingNote, setEditingNote] = useState<Note | null>(null);
 
   //  Мутація для видалення
   const deleteMutation = useMutation({
@@ -37,38 +39,42 @@ export default function NoteList({ data, isLoading, isError }: NoteListProps) {
   if (!data || !data.notes || data.notes.length === 0) return null;
 
   return (
-    <ul className={css.list}>
-      {data.notes.map((note) => (
-        <li key={note.id} className={css.listItem}>
-          <h2 className={css.title}>{note.title ?? "Untitled"}</h2>
-          <p className={css.content}>{note.content}</p>
-          <div className={css.footer}>
-            <span className={css.tag}>{note.tag ?? "General"}</span>
-            {/* UPDATE — приклад */}
-            <button
-              className={css.button}
-              onClick={() =>
-                updateMutation.mutate({
-                  id: note.id,
-                  dto: {
-                    title: note.title,
-                    content: note.content + " (updated)",
-                    tag: note.tag,
-                  },
-                })
-              }
-            >
-              Update
-            </button>
-            <button
-              className={css.button}
-              onClick={() => deleteMutation.mutate(note.id)}
-            >
-              Delete
-            </button>
-          </div>
-        </li>
-      ))}
-    </ul>
+    <>
+      <ul className={css.list}>
+        {data.notes.map((note) => (
+          <li key={note.id} className={css.listItem}>
+            <h2 className={css.title}>{note.title ?? "Untitled"}</h2>
+            <p className={css.content}>{note.content}</p>
+            <div className={css.footer}>
+              <span className={css.tag}>{note.tag ?? "General"}</span>
+              {/* UPDATE — приклад */}
+              <button
+                className={css.button}
+                onClick={() => setEditingNote(note)}
+              >
+                Update
+              </button>
+              <button
+                className={css.button}
+                onClick={() => deleteMutation.mutate(note.id)}
+              >
+                Delete
+              </button>
+            </div>
+          </li>
+        ))}
+      </ul>
+      {/* Модалка редагування */}
+      {editingNote && (
+        <EditNoteModal
+          note={editingNote}
+          onClose={() => setEditingNote(null)}
+          onSubmit={(params: { id: string; dto: UpdateNoteDto }) => {
+            updateMutation.mutate(params); // передаємо саме {id, dto}
+            setEditingNote(null);
+          }}
+        />
+      )}
+    </>
   );
 }

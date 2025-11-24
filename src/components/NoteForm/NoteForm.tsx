@@ -1,9 +1,11 @@
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
 import css from "./NoteForm.module.css";
-import type { CreateNoteDto } from "../../services/noteService";
+import type { CreateNoteDto, UpdateNoteDto } from "../../services/noteService";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { createNote } from "../../services/noteService";
+import { createNote, updateNote } from "../../services/noteService";
+import type { Note } from "../../types/note";
+
 interface NoteFormValues {
   title: string;
   content: string;
@@ -12,13 +14,8 @@ interface NoteFormValues {
 
 interface NoteFormProps {
   onSuccess: () => void;
+  initialValues?: Partial<Note>;
 }
-
-const initialValues: NoteFormValues = {
-  title: "",
-  content: "",
-  tag: "Todo",
-};
 
 const validationSchema = Yup.object({
   title: Yup.string().trim().required("Title is required"),
@@ -29,48 +26,63 @@ const validationSchema = Yup.object({
   ),
 });
 
-export default function NoteForm({ onSuccess }: NoteFormProps) {
+export default function NoteForm({ onSuccess, initialValues }: NoteFormProps) {
   const queryClient = useQueryClient();
 
   const createMutation = useMutation({
     mutationFn: (dto: CreateNoteDto) => createNote(dto),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notes"] });
-      onSuccess(); // закрити модалку
+      onSuccess();
     },
   });
-  const handleSubmit = async (
-    values: NoteFormValues,
-    { setSubmitting, resetForm }: any
-  ) => {
-    try {
-      //  Тут  запит створення нотатки через useMutation
-      createMutation.mutate(values); // ← CREATE NOTE
-      resetForm();
-    } finally {
-      setSubmitting(false);
+
+  const updateMutation = useMutation({
+    mutationFn: (params: { id: string; dto: UpdateNoteDto }) =>
+      updateNote(params.id, params.dto),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notes"] });
+      onSuccess();
+    },
+  });
+
+  // 🔥 FORM INITIAL VALUES — правильне місце
+  const formInitialValues: NoteFormValues = {
+    title: initialValues?.title ?? "",
+    content: initialValues?.content ?? "",
+    tag: initialValues?.tag ?? "Todo",
+  };
+
+  const isEditing = Boolean(initialValues?.id);
+
+  const handleSubmit = (values: NoteFormValues) => {
+    if (isEditing) {
+      updateMutation.mutate({
+        id: initialValues!.id!,
+        dto: values,
+      });
+    } else {
+      createMutation.mutate(values);
     }
   };
 
   return (
     <Formik
-      initialValues={initialValues}
+      initialValues={formInitialValues}
       validationSchema={validationSchema}
       onSubmit={handleSubmit}
+      enableReinitialize
     >
       {({ isSubmitting, handleReset }) => (
         <Form className={css.form}>
           <div className={css.formGroup}>
             <label htmlFor="title">Title</label>
-
             <Field id="title" type="text" name="title" className={css.input} />
-
             <ErrorMessage name="title" component="span" className={css.error} />
           </div>
 
           <div className={css.formGroup}>
             <label htmlFor="content">Content</label>
-
             <Field
               as="textarea"
               id="content"
@@ -78,7 +90,6 @@ export default function NoteForm({ onSuccess }: NoteFormProps) {
               rows={8}
               className={css.textarea}
             />
-
             <ErrorMessage
               name="content"
               component="span"
@@ -88,7 +99,6 @@ export default function NoteForm({ onSuccess }: NoteFormProps) {
 
           <div className={css.formGroup}>
             <label htmlFor="tag">Tag</label>
-
             <Field as="select" id="tag" name="tag" className={css.select}>
               <option value="Todo">Todo</option>
               <option value="Work">Work</option>
@@ -96,8 +106,6 @@ export default function NoteForm({ onSuccess }: NoteFormProps) {
               <option value="Meeting">Meeting</option>
               <option value="Shopping">Shopping</option>
             </Field>
-
-            <ErrorMessage name="tag" component="span" className={css.error} />
           </div>
 
           <div className={css.actions}>
@@ -117,7 +125,7 @@ export default function NoteForm({ onSuccess }: NoteFormProps) {
               className={css.submitButton}
               disabled={isSubmitting}
             >
-              Create note
+              {isEditing ? "Update note" : "Create note"}
             </button>
           </div>
         </Form>
