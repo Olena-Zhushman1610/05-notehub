@@ -4,7 +4,7 @@ import type { Note } from "../types/note";
 
 const BASE_URL = "https://notehub-public.goit.study/api/notes";
 
-const API_TOKEN = import.meta.env.VITE_NOTE_HUB_TOKEN;
+const API_TOKEN = import.meta.env.VITE_NOTEHUB_TOKEN;
 // axios instance
 const api = axios.create({
   baseURL: BASE_URL,
@@ -32,17 +32,6 @@ export interface CreateNoteDto {
   title: string;
   content: string;
   tag: string;
-}
-
-export interface DeleteResponse {
-  message: string;
-  note: Note;
-}
-
-export interface UpdateNoteDto {
-  title?: string;
-  content?: string;
-  tag?: string;
 }
 
 //
@@ -88,27 +77,12 @@ export async function createNote(dto: CreateNoteDto): Promise<Note> {
 // 3) deleteNote
 // ----------------------
 
-export async function deleteNote(id: string): Promise<DeleteResponse> {
+export async function deleteNote(id: string): Promise<Note> {
   try {
-    const response: AxiosResponse<DeleteResponse> = await api.delete(`/${id}`);
+    const response: AxiosResponse<Note> = await api.delete(`/${id}`);
     return response.data;
   } catch (error) {
     console.error("❌ Помилка deleteNote:", error);
     throw new Error("Не вдалося видалити нотатку");
-  }
-}
-
-//4)------update-----
-
-export async function updateNote(
-  id: string,
-  dto: UpdateNoteDto
-): Promise<Note> {
-  try {
-    const response: AxiosResponse<Note> = await api.patch(`/${id}`, dto);
-    return response.data;
-  } catch (error) {
-    console.error("❌ Помилка updateNote:", error);
-    throw new Error("Не вдалося оновити нотатку");
   }
 }

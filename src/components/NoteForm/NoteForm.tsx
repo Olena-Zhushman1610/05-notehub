@@ -1,10 +1,9 @@
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
 import css from "./NoteForm.module.css";
-import type { CreateNoteDto, UpdateNoteDto } from "../../services/noteService";
+import type { CreateNoteDto } from "../../services/noteService";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { createNote, updateNote } from "../../services/noteService";
-import type { Note } from "../../types/note";
+import { createNote } from "../../services/noteService";
 
 interface NoteFormValues {
   title: string;
@@ -14,7 +13,6 @@ interface NoteFormValues {
 
 interface NoteFormProps {
   onSuccess: () => void;
-  initialValues?: Partial<Note>;
 }
 
 const validationSchema = Yup.object({
@@ -26,7 +24,7 @@ const validationSchema = Yup.object({
   ),
 });
 
-export default function NoteForm({ onSuccess, initialValues }: NoteFormProps) {
+export default function NoteForm({ onSuccess }: NoteFormProps) {
   const queryClient = useQueryClient();
 
   const createMutation = useMutation({
@@ -37,33 +35,14 @@ export default function NoteForm({ onSuccess, initialValues }: NoteFormProps) {
     },
   });
 
-  const updateMutation = useMutation({
-    mutationFn: (params: { id: string; dto: UpdateNoteDto }) =>
-      updateNote(params.id, params.dto),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notes"] });
-      onSuccess();
-    },
-  });
-
-  // 🔥 FORM INITIAL VALUES — правильне місце
   const formInitialValues: NoteFormValues = {
-    title: initialValues?.title ?? "",
-    content: initialValues?.content ?? "",
-    tag: initialValues?.tag ?? "Todo",
+    title: "",
+    content: "",
+    tag: "Todo",
   };
 
-  const isEditing = Boolean(initialValues?.id);
-
   const handleSubmit = (values: NoteFormValues) => {
-    if (isEditing) {
-      updateMutation.mutate({
-        id: initialValues!.id!,
-        dto: values,
-      });
-    } else {
-      createMutation.mutate(values);
-    }
+    createMutation.mutate(values);
   };
 
   return (
@@ -71,13 +50,18 @@ export default function NoteForm({ onSuccess, initialValues }: NoteFormProps) {
       initialValues={formInitialValues}
       validationSchema={validationSchema}
       onSubmit={handleSubmit}
-      enableReinitialize
     >
-      {({ isSubmitting, handleReset }) => (
+      {({ isSubmitting, handleReset, errors, touched }) => (
         <Form className={css.form}>
           <div className={css.formGroup}>
             <label htmlFor="title">Title</label>
-            <Field id="title" type="text" name="title" className={css.input} />
+            <Field
+              id="title"
+              type="text"
+              name="title"
+              className={css.input}
+              aria-invalid={Boolean(errors.content && touched.content)}
+            />
             <ErrorMessage name="title" component="span" className={css.error} />
           </div>
 
@@ -89,6 +73,7 @@ export default function NoteForm({ onSuccess, initialValues }: NoteFormProps) {
               name="content"
               rows={8}
               className={css.textarea}
+              aria-invalid={Boolean(errors.content && touched.content)}
             />
             <ErrorMessage
               name="content"
@@ -106,6 +91,7 @@ export default function NoteForm({ onSuccess, initialValues }: NoteFormProps) {
               <option value="Meeting">Meeting</option>
               <option value="Shopping">Shopping</option>
             </Field>
+            <ErrorMessage name="tag" component="span" className={css.error} />
           </div>
 
           <div className={css.actions}>
@@ -123,9 +109,9 @@ export default function NoteForm({ onSuccess, initialValues }: NoteFormProps) {
             <button
               type="submit"
               className={css.submitButton}
-              disabled={isSubmitting}
+              disabled={isSubmitting || createMutation.isPending}
             >
-              {isEditing ? "Update note" : "Create note"}
+              Create note
             </button>
           </div>
         </Form>

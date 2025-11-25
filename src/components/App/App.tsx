@@ -15,13 +15,19 @@ function App() {
     const saved = localStorage.getItem("notesPage");
     return saved ? Number(saved) : 1;
   });
+
+  //  відкладене значення пошуку
+  const [debouncedSearch] = useDebounce(search, 500);
+  // Скидаємо пагінацію тільки після завершення дебаунса
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch]);
+  // зберігаємо сторінку
   useEffect(() => {
     localStorage.setItem("notesPage", page.toString());
   }, [page]);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  //  відкладене значення пошуку
-  const [debouncedSearch] = useDebounce(search, 500);
   const { data, isLoading, isError } = useQuery({
     // Пошук тепер впливає на кеш
     queryKey: ["notes", { page, search: debouncedSearch }],
